@@ -5,7 +5,6 @@ import 'package:translator/translator.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'word_model.dart';
 
-// --- ZENGİN SONUÇ MODELİ ---
 class TranslationResult {
   final String text;
   final bool isOfflineFallback;
@@ -65,7 +64,6 @@ class TranslationService {
     return true;
   }
 
-  // --- ANA ÇEVİRİ VE ZENGİNLEŞTİRME AKIŞI ---
   Future<TranslationResult> translateText(String text, {bool isEnToTr = true}) async {
     if (text.trim().isEmpty) {
       return TranslationResult(text: "", isOfflineFallback: false);
@@ -84,8 +82,7 @@ class TranslationService {
         final results = await Future.wait([
           _onlineTranslator.translate(processedText, from: fromLang, to: toLang),
           (isSingleWord && isEnToTr) ? _fetchSpellSuggestion(processedText) : Future.value(null),
-          // GÜNCELLEME: Sözlük araması artık hem TR->EN hem de EN->TR yönünde çalışır
-          (isSingleWord) ? _fetchGoogleDictionary(processedText, isEnToTr) : Future.value(null),
+          (isSingleWord) ? _fetchCombinedDictionary(processedText, isEnToTr) : Future.value(null),
         ]);
 
         final translation = results[0] as Translation;
@@ -111,7 +108,6 @@ class TranslationService {
     }
   }
 
-  // --- YAZIM ÖNERİSİ SERVİSİ (Datamuse API) ---
   Future<String?> _fetchSpellSuggestion(String word) async {
     try {
       final url = Uri.parse('https://api.datamuse.com/words?sp=$word&max=1');
@@ -132,7 +128,42 @@ class TranslationService {
     return null;
   }
 
-  // --- GOOGLE BILINGUAL DICTIONARY SERVİSİ (İstatistiksel ve Kusursuz Sonuçlar) ---
+  // ÇİFT MOTORLU BİRLEŞTİRME ALGORİTMASI
+  Future<List<WordMeaning>?> _fetchCombinedDictionary(String word, bool isEnToTr) async {
+    final results = await Future.wait([
+      _fetchGoogleDictionary(word, isEnToTr),
+      isEnToTr ? _fetchFreeDictionaryMeanings(word) : Future.value(null),
+    ]);
+
+    final List<WordMeaning>? googleData = results[0] as List<WordMeaning>?;
+    final List<WordMeaning>? freeDictData = results[1] as List<WordMeaning>?;
+
+    if (googleData == null && freeDictData == null) return null;
+
+    List<WordMeaning> mergedList = [];
+    Set<String> foundPOS = {};
+
+    // 1. Öncelik: Google'ın resmi ve istatistiksel Türkçe çevirileri
+    if (googleData != null) {
+      for (var m in googleData) {
+        mergedList.add(m);
+        foundPOS.add(m.partOfSpeech);
+      }
+    }
+
+    // 2. Öncelik: Google'ın kaçırdığı argo/ünlem gibi türleri Free Dictionary'den yamamak
+    if (freeDictData != null) {
+      for (var m in freeDictData) {
+        if (!foundPOS.contains(m.partOfSpeech)) {
+          mergedList.add(m);
+          foundPOS.add(m.partOfSpeech);
+        }
+      }
+    }
+
+    return mergedList.isNotEmpty ? mergedList : null;
+  }
+
   Future<List<WordMeaning>?> _fetchGoogleDictionary(String word, bool isEnToTr) async {
     try {
       final sl = isEnToTr ? 'en' : 'tr';
@@ -144,18 +175,16 @@ class TranslationService {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
 
-        // Google Translate API'de sözlük verisi data[1] içinde liste olarak gelir
         if (data.length > 1 && data[1] != null) {
           final List<dynamic> dict = data[1];
           List<WordMeaning> meaningsList = [];
 
           for (var entry in dict) {
             if (entry is List && entry.length >= 2) {
-              final String pos = entry[0].toString().toLowerCase(); // noun, verb vb.
-              final List<dynamic> terms = entry[1]; // Karşılıklar listesi
+              final String pos = entry[0].toString().toLowerCase();
+              final List<dynamic> terms = entry[1];
 
               if (terms.isNotEmpty && _isSupportedPOS(pos)) {
-                // İstatistiksel olarak en yaygın 5 karşılığı aralarına virgül koyarak birleştir
                 final String defTr = terms.cast<String>().take(5).join(', ');
 
                 meaningsList.add(
@@ -171,6 +200,59 @@ class TranslationService {
           }
           return meaningsList.isNotEmpty ? meaningsList : null;
         }
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }
+
+  Future<List<WordMeaning>?> _fetchFreeDictionaryMeanings(String word) async {
+    try {
+      final url = Uri.parse('https://api.dictionaryapi.dev/api/v2/entries/en/${Uri.encodeComponent(word)}');
+      final response = await http.get(url).timeout(const Duration(milliseconds: 2500));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (data.isEmpty) return null;
+
+        List<WordMeaning> meaningsList = [];
+        Set<String> foundPOS = {};
+
+        for (var entry in data) {
+          final List<dynamic> meaningsJson = entry['meanings'] ?? [];
+          for (var m in meaningsJson) {
+            final String pos = m['partOfSpeech']?.toString().toLowerCase() ?? '';
+            final List<dynamic> defs = m['definitions'] ?? [];
+
+            if (defs.isNotEmpty && _isSupportedPOS(pos) && !foundPOS.contains(pos)) {
+              final String defEn = defs[0]['definition']?.toString() ?? '';
+
+              if (defEn.isNotEmpty) {
+                final transResult = await _onlineTranslator.translate(defEn, from: 'en', to: 'tr');
+                String defTr = transResult.text;
+
+                if (defTr.isNotEmpty) {
+                  defTr = defTr[0].toUpperCase() + defTr.substring(1);
+                }
+
+                meaningsList.add(
+                  WordMeaning(
+                    partOfSpeech: pos,
+                    partOfSpeechTr: _translatePOS(pos),
+                    definitionEn: defEn,
+                    definitionTr: defTr,
+                  ),
+                );
+
+                foundPOS.add(pos);
+              }
+            }
+            if (meaningsList.length >= 5) break;
+          }
+          if (meaningsList.length >= 5) break;
+        }
+        return meaningsList.isNotEmpty ? meaningsList : null;
       }
     } catch (e) {
       return null;
