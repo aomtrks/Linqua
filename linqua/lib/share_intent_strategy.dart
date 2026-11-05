@@ -1,4 +1,4 @@
-Dartimport 'dart:async';
+import 'dart:async';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'word_capture_strategy.dart';
 

@@ -1,4 +1,4 @@
-Dartimport 'word_capture_strategy.dart';
+import 'word_capture_strategy.dart';
 
 class WordCaptureContext {
   WordCaptureStrategy _strategy;
