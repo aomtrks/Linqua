@@ -1,4 +1,4 @@
-1. Dartabstract class WordCaptureStrategy {
+abstract class WordCaptureStrategy {
   // Stratejiyi başlatır ve bir kelime yakalandığında ne yapılacağını belirler
   void initialize(Function(String) onWordCaptured);
 
