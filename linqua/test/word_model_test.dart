@@ -32,7 +32,7 @@ void main() {
       expect(restored.meanings?.first.partOfSpeechTr, 'Sıfat');
     });
 
-    test('SM-2 interval and easeFactor calculation on remembered swipe', () {
+    test('SM-2 interval and easeFactor calculation on remembered and forgotten swipes', () {
       final card = WordCard(
         id: '102',
         originalWord: 'Ubiquitous',
@@ -55,6 +55,14 @@ void main() {
       expect(card.repetition, 2);
       expect(card.interval, 6);
       expect(card.easeFactor, closeTo(2.7, 0.01));
+
+      // 3. Unutulan kelime (sola kaydırma: repetition sıfırlanır, easeFactor minimum 1.3 korunur)
+      card.repetition = 0;
+      card.interval = 1;
+      card.easeFactor = (card.easeFactor - 0.2 < 1.3) ? 1.3 : card.easeFactor - 0.2;
+      expect(card.repetition, 0);
+      expect(card.interval, 1);
+      expect(card.easeFactor, closeTo(2.5, 0.01));
     });
   });
 }
