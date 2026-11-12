@@ -23,10 +23,10 @@ class WordMeaning {
 
   factory WordMeaning.fromMap(Map<dynamic, dynamic> map) {
     return WordMeaning(
-      partOfSpeech: map['partOfSpeech'] ?? '',
-      partOfSpeechTr: map['partOfSpeechTr'] ?? '',
-      definitionEn: map['definitionEn'] ?? '',
-      definitionTr: map['definitionTr'] ?? '',
+      partOfSpeech: map['partOfSpeech']?.toString() ?? '',
+      partOfSpeechTr: map['partOfSpeechTr']?.toString() ?? '',
+      definitionEn: map['definitionEn']?.toString() ?? '',
+      definitionTr: map['definitionTr']?.toString() ?? '',
     );
   }
 }
@@ -42,7 +42,7 @@ class WordCard {
   String? correctedWord;
   List<WordMeaning>? meanings;
 
-  // SRS (Aralıklı Tekrar) Değişkenleri
+  // SRS (Aralıklı Tekrar - SM-2) Değişkenleri
   int repetition;
   int interval;
   double easeFactor;
@@ -78,24 +78,34 @@ class WordCard {
 
   factory WordCard.fromMap(Map<dynamic, dynamic> map) {
     List<WordMeaning>? parsedMeanings;
-    if (map['meanings'] != null) {
-      final List<dynamic> list = map['meanings'];
-      parsedMeanings = list.map((m) => WordMeaning.fromMap(m as Map)).toList();
+    
+    if (map['meanings'] != null && map['meanings'] is List) {
+      final List<dynamic> list = map['meanings'] as List<dynamic>;
+      parsedMeanings = [];
+      for (var item in list) {
+        if (item is Map) {
+          parsedMeanings.add(WordMeaning.fromMap(item));
+        }
+      }
     }
 
     return WordCard(
-      id: map['id'] ?? '',
-      originalWord: map['originalWord'] ?? '',
-      translatedWord: map['translatedWord'] ?? '',
-      capturedAt: DateTime.parse(map['capturedAt'] ?? DateTime.now().toIso8601String()),
-      correctedWord: map['correctedWord'],
+      id: map['id']?.toString() ?? '',
+      originalWord: map['originalWord']?.toString() ?? '',
+      translatedWord: map['translatedWord']?.toString() ?? '',
+      capturedAt: DateTime.tryParse(map['capturedAt']?.toString() ?? '') ?? DateTime.now(),
+      correctedWord: map['correctedWord']?.toString(),
       meanings: parsedMeanings,
-      repetition: map['repetition'] ?? 0,
-      interval: map['interval'] ?? 1,
-      easeFactor: map['easeFactor'] ?? 2.5,
-      nextReviewDate: map['nextReviewDate'] != null
-          ? DateTime.parse(map['nextReviewDate'])
-          : DateTime.now(),
+      repetition: (map['repetition'] is int)
+          ? map['repetition'] as int
+          : int.tryParse(map['repetition']?.toString() ?? '0') ?? 0,
+      interval: (map['interval'] is int)
+          ? map['interval'] as int
+          : int.tryParse(map['interval']?.toString() ?? '1') ?? 1,
+      easeFactor: (map['easeFactor'] is num)
+          ? (map['easeFactor'] as num).toDouble()
+          : double.tryParse(map['easeFactor']?.toString() ?? '2.5') ?? 2.5,
+      nextReviewDate: DateTime.tryParse(map['nextReviewDate']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }
