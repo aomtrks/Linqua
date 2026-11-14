@@ -33,7 +33,7 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
     "TWO WRONGS DONT MAKE A RIGHT",
   ];
 
-  late String _currentProverb = "";
+  String _currentProverb = "";
   final Map<String, int> _cipherMap = {};
   final Map<int, String> _userGuesses = {};
   int? _selectedIndex;
@@ -51,7 +51,7 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
     await prefs.setString('crypto_proverb', _currentProverb);
     await prefs.setString('crypto_cipher', jsonEncode(_cipherMap));
 
-    Map<String, String> stringKeyGuesses = {};
+    final Map<String, String> stringKeyGuesses = {};
     _userGuesses.forEach((key, value) {
       stringKeyGuesses[key.toString()] = value;
     });
@@ -71,17 +71,20 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
     final savedCipher = prefs.getString('crypto_cipher');
     final savedGuesses = prefs.getString('crypto_guesses');
 
-    if (savedProverb != null && savedProverb.isNotEmpty && savedCipher != null && savedGuesses != null) {
+    if (savedProverb != null &&
+        savedProverb.isNotEmpty &&
+        savedCipher != null &&
+        savedGuesses != null) {
       setState(() {
         _currentProverb = savedProverb;
 
-        Map<String, dynamic> decodedCipher = jsonDecode(savedCipher);
+        final Map<String, dynamic> decodedCipher = jsonDecode(savedCipher);
         _cipherMap.clear();
         decodedCipher.forEach((key, value) {
           _cipherMap[key] = value as int;
         });
 
-        Map<String, dynamic> decodedGuesses = jsonDecode(savedGuesses);
+        final Map<String, dynamic> decodedGuesses = jsonDecode(savedGuesses);
         _userGuesses.clear();
         decodedGuesses.forEach((key, value) {
           _userGuesses[int.parse(key)] = value as String;
@@ -112,9 +115,9 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
 
     try {
       for (int i = 0; i < 5; i++) {
-        final response = await http.get(
-          Uri.parse('https://dummyjson.com/quotes/random')
-        ).timeout(const Duration(seconds: 4));
+        final response = await http
+            .get(Uri.parse('https://dummyjson.com/quotes/random'))
+            .timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -140,11 +143,11 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
     setState(() {
       _currentProverb = fetchedProverb;
 
-      List<int> numbers = List.generate(26, (i) => i + 1)..shuffle();
+      final List<int> numbers = List.generate(26, (i) => i + 1)..shuffle();
       int indexCount = 0;
 
       for (int i = 0; i < _currentProverb.length; i++) {
-        String char = _currentProverb[i];
+        final String char = _currentProverb[i];
         if (RegExp(r'[A-Z]').hasMatch(char)) {
           if (!_cipherMap.containsKey(char)) {
             _cipherMap[char] = numbers[indexCount++];
@@ -152,12 +155,12 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
         }
       }
 
-      List<String> words = _currentProverb.split(' ');
-      List<List<int>> wordIndices = [];
+      final List<String> words = _currentProverb.split(' ');
+      final List<List<int>> wordIndices = [];
       int currentIndexTracker = 0;
 
-      for (String word in words) {
-        List<int> currentWordIndices = [];
+      for (final String word in words) {
+        final List<int> currentWordIndices = [];
         for (int i = 0; i < word.length; i++) {
           if (RegExp(r'[A-Z]').hasMatch(word[i])) {
             currentWordIndices.add(currentIndexTracker + i);
@@ -169,14 +172,16 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
         currentIndexTracker += word.length + 1;
       }
 
-      int totalLetters = wordIndices.expand((element) => element).length;
-      int hintCount = max(1, (totalLetters * 0.10).ceil());
+      final int totalLetters =
+          wordIndices.expand((element) => element).length;
+      final int hintCount = max(1, (totalLetters * 0.10).ceil());
 
       wordIndices.shuffle();
 
       for (int i = 0; i < hintCount && i < wordIndices.length; i++) {
-        List<int> targetWord = wordIndices[i];
-        int randomCharIndex = targetWord[Random().nextInt(targetWord.length)];
+        final List<int> targetWord = wordIndices[i];
+        final int randomCharIndex =
+            targetWord[Random().nextInt(targetWord.length)];
         _userGuesses[randomCharIndex] = _currentProverb[randomCharIndex];
       }
 
@@ -189,7 +194,7 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
 
   void _selectFirstEmptyBox() {
     for (int i = 0; i < _currentProverb.length; i++) {
-      String char = _currentProverb[i];
+      final String char = _currentProverb[i];
       if (RegExp(r'[A-Z]').hasMatch(char)) {
         if (!_userGuesses.containsKey(i)) {
           setState(() {
@@ -210,9 +215,9 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
       return;
     }
 
-    int currentPos = _selectedIndex!;
+    final int currentPos = _selectedIndex!;
     for (int i = 1; i <= _currentProverb.length; i++) {
-      int checkPos = forward
+      final int checkPos = forward
           ? (currentPos + i) % _currentProverb.length
           : (currentPos - i + _currentProverb.length) % _currentProverb.length;
 
@@ -249,7 +254,7 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
         return;
       }
 
-      String correctChar = _currentProverb[_selectedIndex!];
+      final String correctChar = _currentProverb[_selectedIndex!];
 
       if (actionOrLetter == correctChar) {
         setState(() {
@@ -315,9 +320,11 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
       pageBuilder: (context, anim1, anim2) => const SizedBox(),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5 * animation.value, sigmaY: 5 * animation.value),
+          filter: ImageFilter.blur(
+              sigmaX: 5 * animation.value, sigmaY: 5 * animation.value),
           child: ScaleTransition(
-            scale: Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutBack)),
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutBack)),
             child: FadeTransition(
               opacity: animation,
               child: Dialog(
@@ -344,16 +351,19 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text("Kriptogram Bulmacası", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Kriptogram Bulmacası",
+            style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _isLoadingQuote ? null : () => _initGame(forceRefresh: true),
+            onPressed: _isLoadingQuote
+                ? null
+                : () => _initGame(forceRefresh: true),
             tooltip: "Yeni Oyun",
           )
         ],
@@ -365,7 +375,11 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
-                  Text("İnternetten Yeni Bulmaca Çekiliyor...", style: TextStyle(color: Theme.of(context).colorScheme.primary))
+                  Text(
+                    "İnternetten Yeni Bulmaca Çekiliyor...",
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary),
+                  )
                 ],
               ),
             )
@@ -390,11 +404,11 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
   }
 
   Widget _buildProverbArea(bool isDark) {
-    List<Widget> wordsWidgets = [];
+    final List<Widget> wordsWidgets = [];
     List<Widget> charWidgets = [];
 
     for (int i = 0; i < _currentProverb.length; i++) {
-      String char = _currentProverb[i];
+      final String char = _currentProverb[i];
       if (char == ' ') {
         if (charWidgets.isNotEmpty) {
           wordsWidgets.add(Wrap(children: charWidgets));
@@ -413,7 +427,7 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
       spacing: 16,
       runSpacing: 24,
       alignment: WrapAlignment.center,
-      children: wordsWidgets
+      children: wordsWidgets,
     );
   }
 
@@ -421,7 +435,8 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
     if (!RegExp(r'[A-Z]').hasMatch(char)) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Text(char, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        child: Text(char,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
       );
     }
 
@@ -430,8 +445,6 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
     final bool isSelected = _selectedIndex == index;
     final bool isError = _errorIndex == index;
     final bool hasGuess = guessedChar != null;
-
-    // GÜNCELLEME: Harf tamamen bulunmuşsa altındaki sayıyı gizle
     final bool isFullyGuessed = _isLetterFullyGuessed(char);
 
     return GestureDetector(
@@ -449,7 +462,9 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
           border: Border.all(
             color: isError
                 ? Colors.redAccent
-                : isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                : isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.transparent,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(8),
@@ -466,7 +481,6 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-            // GÜNCELLEME: isFullyGuessed false ise numarayı göster
             if (!isFullyGuessed)
               Positioned(
                 bottom: 4,
@@ -486,18 +500,17 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
   }
 
   Widget _buildKeyboard(bool isDark) {
-    const List<String> rows = [
-      "QWERTYUIOP",
-      "ASDFGHJKL",
-      "ZXCVBNM"
-    ];
+    const List<String> rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
     return Container(
       padding: const EdgeInsets.only(bottom: 16, top: 16, left: 8, right: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5))
         ],
       ),
       child: Column(
@@ -539,11 +552,14 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isUsed
-              ? (isDark ? Colors.white12.withOpacity(0.05) : Colors.grey.shade300)
+              ? (isDark
+                  ? Colors.white12.withOpacity(0.05)
+                  : Colors.grey.shade300)
               : (isDark ? Colors.white10 : Colors.white),
           borderRadius: BorderRadius.circular(6),
           boxShadow: [
-            if (!isDark && !isUsed) BoxShadow(color: Colors.grey.shade300, offset: const Offset(0, 2))
+            if (!isDark && !isUsed)
+              BoxShadow(color: Colors.grey.shade300, offset: const Offset(0, 2))
           ],
         ),
         child: Text(
@@ -551,8 +567,9 @@ class _CryptogramGameScreenState extends State<CryptogramGameScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: isUsed ? (isDark ? Colors.white30 : Colors.grey.shade500) : null,
-          )
+            color:
+                isUsed ? (isDark ? Colors.white30 : Colors.grey.shade500) : null,
+          ),
         ),
       ),
     );
@@ -600,7 +617,6 @@ class _WinDialogWidget extends StatefulWidget {
 class _WinDialogWidgetState extends State<_WinDialogWidget> {
   String _translatedText = "";
   bool _isLoading = true;
-  bool _isOffline = false;
 
   @override
   void initState() {
@@ -610,11 +626,11 @@ class _WinDialogWidgetState extends State<_WinDialogWidget> {
 
   Future<void> _translateResult() async {
     try {
-      final result = await widget.translationService.translateText(widget.proverb, isEnToTr: true);
+      final result = await widget.translationService
+          .translateText(widget.proverb, isEnToTr: true);
       if (mounted) {
         setState(() {
           _translatedText = result.text;
-          _isOffline = result.isOfflineFallback;
           _isLoading = false;
         });
       }
@@ -664,16 +680,33 @@ class _WinDialogWidgetState extends State<_WinDialogWidget> {
         children: [
           const Icon(Icons.emoji_events_rounded, color: Colors.amber, size: 64),
           const SizedBox(height: 16),
-          const Text("Tebrikler!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const Text("Tebrikler!",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          Text(widget.proverb, textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
+          Text(
+            widget.proverb,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
           const SizedBox(height: 16),
           _isLoading
               ? const CircularProgressIndicator()
               : Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                  child: Text(_translatedText, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic)),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white10 : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _translatedText,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 16, fontStyle: FontStyle.italic),
+                  ),
                 ),
           const SizedBox(height: 24),
           Row(
@@ -681,7 +714,8 @@ class _WinDialogWidgetState extends State<_WinDialogWidget> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: widget.onRestart,
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                  style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16)),
                   child: const Text("Yeni Oyun"),
                 ),
               ),
@@ -692,7 +726,7 @@ class _WinDialogWidgetState extends State<_WinDialogWidget> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16)
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: const Text("Havuza Ekle"),
                 ),

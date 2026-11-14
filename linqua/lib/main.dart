@@ -24,7 +24,7 @@ class KelimeAvcisiApp extends StatelessWidget {
       valueListenable: themeNotifier,
       builder: (context, isDark, child) {
         return MaterialApp(
-          title: 'Kelime Avcısı',
+          title: 'Linqua - Kelime Avcısı',
           debugShowCheckedModeBanner: false,
           themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
           theme: ThemeData(
